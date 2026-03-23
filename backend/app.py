@@ -61,15 +61,32 @@ async def query_documents(request: QueryRequest):
         session_id = request.session_id
         if not session_id:
             session_id = rag_system.session_manager.create_session()
-        
-        # Process query using RAG system
-        answer, sources = rag_system.query(request.query, session_id)
-        
+
+        # Run the (sync) RAG query in a thread to avoid blocking the event loop,
+        # while still allowing the Agent SDK's async internals to work.
+        import anyio
+        answer, sources = await anyio.to_thread.run_sync(
+            lambda: rag_system.query(request.query, session_id)
+        )
+
         return QueryResponse(
             answer=answer,
             sources=sources,
             session_id=session_id
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/new-chat")
+async def new_chat(request: QueryRequest):
+    """Clear session history and return a fresh session ID"""
+    try:
+        # Clear old session if provided
+        if request.session_id:
+            rag_system.session_manager.clear_session(request.session_id)
+        # Create a new session
+        session_id = rag_system.session_manager.create_session()
+        return {"session_id": session_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -113,7 +130,7 @@ class DevStaticFiles(StaticFiles):
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
         return response
-    
-    
+
+
 # Serve static files for the frontend
 app.mount("/", StaticFiles(directory="../frontend", html=True), name="static")

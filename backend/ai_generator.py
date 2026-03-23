@@ -1,135 +1,94 @@
-import anthropic
-from typing import List, Optional, Dict, Any
+import anyio
+from typing import List, Optional
+from claude_agent_sdk import (
+    tool,
+    create_sdk_mcp_server,
+    query as agent_query,
+    ClaudeAgentOptions,
+    ResultMessage,
+)
+
 
 class AIGenerator:
-    """Handles interactions with Anthropic's Claude API for generating responses"""
-    
-    # Static system prompt to avoid rebuilding on each call
-    SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
+    """Handles interactions with Claude via the Agent SDK (uses Claude Code OAuth token)"""
 
-Search Tool Usage:
-- Use the search tool **only** for questions about specific course content or detailed educational materials
-- **One search per query maximum**
+    SYSTEM_PROMPT = """You are an AI assistant specialized in course materials and educational content with access to a search tool for course information.
+
+IMPORTANT RULES:
+- Use the mcp__courses__search_course_content tool for questions about course content
+- Make at most ONE search call per query - do NOT search multiple lessons separately
+- Do NOT use ToolSearch - the search tool is already available to you directly
 - Synthesize search results into accurate, fact-based responses
-- If search yields no results, state this clearly without offering alternatives
+- If search yields no results, state this clearly
 
-Response Protocol:
-- **General knowledge questions**: Answer using existing knowledge without searching
-- **Course-specific questions**: Search first, then answer
-- **No meta-commentary**:
- - Provide direct answers only — no reasoning process, search explanations, or question-type analysis
- - Do not mention "based on the search results"
-
-
-All responses must be:
-1. **Brief, Concise and focused** - Get to the point quickly
-2. **Educational** - Maintain instructional value
-3. **Clear** - Use accessible language
-4. **Example-supported** - Include relevant examples when they aid understanding
-Provide only the direct answer to what was asked.
+Response style:
+- Brief, concise, and educational
+- No meta-commentary about searching or tools
+- Provide direct answers only
 """
-    
-    def __init__(self, api_key: str, model: str):
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = model
-        
-        # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
-    
-    def generate_response(self, query: str,
+
+    def __init__(self, tool_manager=None):
+        self.tool_manager = tool_manager
+        self._mcp_server = None
+
+    def set_tool_manager(self, tool_manager):
+        """Set the tool manager and build the MCP server with its tools."""
+        self.tool_manager = tool_manager
+        self._mcp_server = self._build_mcp_server()
+
+    def _build_mcp_server(self):
+        """Create an MCP server exposing the search tool."""
+        tm = self.tool_manager
+
+        @tool(
+            "search_course_content",
+            "Search course materials with smart course name matching and lesson filtering. "
+            "Parameters: query (string, required), course_name (string, optional - partial matches work), "
+            "lesson_number (integer, optional).",
+            {"query": str, "course_name": str, "lesson_number": int}
+        )
+        async def search_course_content(args):
+            query_text = args["query"]
+            course_name = args.get("course_name")
+            lesson_number = args.get("lesson_number")
+            result = tm.execute_tool("search_course_content", query=query_text, course_name=course_name, lesson_number=lesson_number)
+            return {"content": [{"type": "text", "text": result}]}
+
+        return create_sdk_mcp_server("courses", tools=[search_course_content])
+
+    def generate_response(self, query_text: str,
                          conversation_history: Optional[str] = None,
                          tools: Optional[List] = None,
                          tool_manager=None) -> str:
-        """
-        Generate AI response with optional tool usage and conversation context.
-        
-        Args:
-            query: The user's question or request
-            conversation_history: Previous messages for context
-            tools: Available tools the AI can use
-            tool_manager: Manager to execute tools
-            
-        Returns:
-            Generated response as string
-        """
-        
-        # Build system content efficiently - avoid string ops when possible
+        """Generate AI response using the Claude Agent SDK."""
         system_content = (
             f"{self.SYSTEM_PROMPT}\n\nPrevious conversation:\n{conversation_history}"
-            if conversation_history 
+            if conversation_history
             else self.SYSTEM_PROMPT
         )
-        
-        # Prepare API call parameters efficiently
-        api_params = {
-            **self.base_params,
-            "messages": [{"role": "user", "content": query}],
-            "system": system_content
-        }
-        
-        # Add tools if available
-        if tools:
-            api_params["tools"] = tools
-            api_params["tool_choice"] = {"type": "auto"}
-        
-        # Get response from Claude
-        response = self.client.messages.create(**api_params)
-        
-        # Handle tool execution if needed
-        if response.stop_reason == "tool_use" and tool_manager:
-            return self._handle_tool_execution(response, api_params, tool_manager)
-        
-        # Return direct response
-        return response.content[0].text
-    
-    def _handle_tool_execution(self, initial_response, base_params: Dict[str, Any], tool_manager):
-        """
-        Handle execution of tool calls and get follow-up response.
-        
-        Args:
-            initial_response: The response containing tool use requests
-            base_params: Base API parameters
-            tool_manager: Manager to execute tools
-            
-        Returns:
-            Final response text after tool execution
-        """
-        # Start with existing messages
-        messages = base_params["messages"].copy()
-        
-        # Add AI's tool use response
-        messages.append({"role": "assistant", "content": initial_response.content})
-        
-        # Execute all tool calls and collect results
-        tool_results = []
-        for content_block in initial_response.content:
-            if content_block.type == "tool_use":
-                tool_result = tool_manager.execute_tool(
-                    content_block.name, 
-                    **content_block.input
-                )
-                
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": content_block.id,
-                    "content": tool_result
-                })
-        
-        # Add tool results as single message
-        if tool_results:
-            messages.append({"role": "user", "content": tool_results})
-        
-        # Prepare final API call without tools
-        final_params = {
-            **self.base_params,
-            "messages": messages,
-            "system": base_params["system"]
-        }
-        
-        # Get final response
-        final_response = self.client.messages.create(**final_params)
-        return final_response.content[0].text
+
+        return anyio.from_thread.run(self._async_generate, query_text, system_content)
+
+    async def _async_generate(self, query_text: str, system_prompt: str) -> str:
+        """Async method that calls the Agent SDK."""
+        mcp_servers = {}
+        if self._mcp_server:
+            mcp_servers = {"courses": self._mcp_server}
+
+        last_text = ""
+        result_text = ""
+        async for message in agent_query(
+            prompt=query_text,
+            options=ClaudeAgentOptions(
+                system_prompt=system_prompt,
+                max_turns=20,
+                permission_mode="bypassPermissions",
+                allowed_tools=["mcp__courses__search_course_content"],
+                mcp_servers=mcp_servers,
+            )
+        ):
+            if isinstance(message, ResultMessage):
+                if message.result:
+                    result_text = message.result
+
+        return result_text or last_text or "I'm sorry, I couldn't generate a response."
