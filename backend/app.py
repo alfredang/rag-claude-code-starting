@@ -115,9 +115,7 @@ async def startup_event():
             print(f"Error loading documents: {e}")
 
 # Custom static file handler with no-cache headers for development
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import os
 from pathlib import Path
 
 

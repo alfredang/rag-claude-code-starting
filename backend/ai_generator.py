@@ -29,15 +29,13 @@ Response style:
 
     def __init__(self, tool_manager=None):
         self.tool_manager = tool_manager
-        self._mcp_server = None
 
     def set_tool_manager(self, tool_manager):
-        """Set the tool manager and build the MCP server with its tools."""
+        """Set the tool manager."""
         self.tool_manager = tool_manager
-        self._mcp_server = self._build_mcp_server()
 
-    def _build_mcp_server(self):
-        """Create an MCP server exposing the search tool."""
+    def _create_mcp_server(self):
+        """Create a fresh MCP server exposing the search tool for each query."""
         tm = self.tool_manager
 
         @tool(
@@ -71,9 +69,8 @@ Response style:
 
     async def _async_generate(self, query_text: str, system_prompt: str) -> str:
         """Async method that calls the Agent SDK."""
-        mcp_servers = {}
-        if self._mcp_server:
-            mcp_servers = {"courses": self._mcp_server}
+        mcp_server = self._create_mcp_server()
+        mcp_servers = {"courses": mcp_server}
 
         last_text = ""
         result_text = ""
