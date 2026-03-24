@@ -6,6 +6,8 @@ A Retrieval-Augmented Generation chatbot for course materials, powered by the [C
 
 ![RAG Chatbot UI](screenshot.png)
 
+**Features:** Dark/light theme toggle, sidebar with course listing and quick-start prompts, markdown-rendered responses with source attribution, session-based conversation history.
+
 ## Prerequisites
 
 - **Python 3.13+**

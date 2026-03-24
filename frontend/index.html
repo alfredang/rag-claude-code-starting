@@ -7,36 +7,71 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Course Materials Assistant</title>
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='4' fill='%23c9a84c'/%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' fill='%230b1a14'/%3E%3C/svg%3E" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css?v=22">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        // Apply saved theme before render to prevent flash
+        const saved = localStorage.getItem('theme');
+        if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    </script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Course Materials Assistant</h1>
-            <p class="subtitle">Ask questions about courses, instructors, and content</p>
-        </header>
+    <!-- Animated background blobs -->
+    <div class="bg-gradient">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
 
+    <div class="container">
         <div class="main-content">
             <!-- Left Sidebar -->
             <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <div class="brand-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="brand-text">Course Assistant</span>
+                </div>
+
                 <!-- New Chat Button -->
                 <div class="sidebar-section">
-                    <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
+                    <button class="new-chat-btn" id="newChatBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        New Chat
+                    </button>
+                </div>
+
+                <!-- Theme Toggle -->
+                <div class="sidebar-section">
+                    <div class="theme-toggle">
+                        <span id="themeLabel">Dark Mode</span>
+                        <button class="theme-toggle-switch" id="themeToggle" role="switch" aria-checked="false" aria-label="Toggle theme"></button>
+                    </div>
                 </div>
 
                 <!-- Course Stats -->
                 <div class="sidebar-section">
-                    <details class="stats-collapsible">
-                        <summary class="stats-header">Courses</summary>
+                    <details class="stats-collapsible" open>
+                        <summary class="sidebar-heading">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                            Courses
+                            <span class="badge" id="totalCourses">-</span>
+                        </summary>
                         <div class="course-stats" id="courseStats">
-                            <div class="stat-item">
-                                <span class="stat-label">Number of courses:</span>
-                                <span class="stat-value" id="totalCourses">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <div class="course-titles" id="courseTitles">
-                                    <span class="loading">Loading...</span>
-                                </div>
+                            <div class="course-titles" id="courseTitles">
+                                <span class="loading-text">Loading...</span>
                             </div>
                         </div>
                     </details>
@@ -44,15 +79,37 @@
 
                 <!-- Suggested Questions -->
                 <div class="sidebar-section">
-                    <details class="suggested-collapsible">
-                        <summary class="suggested-header">Try asking:</summary>
+                    <details class="suggested-collapsible" open>
+                        <summary class="sidebar-heading">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                            Quick Start
+                        </summary>
                         <div class="suggested-items">
-                            <button class="suggested-item" data-question="What is the outline of the &quot;MCP: Build Rich-Context AI Apps with Anthropic&quot; course?">Outline of a course</button>
-                            <button class="suggested-item" data-question="Are there any courses that include a Chatbot implementation?">Courses about Chatbot</button>
-                            <button class="suggested-item" data-question="Are there any courses that explain what RAG is?">Courses explaining RAG</button>
-                            <button class="suggested-item" data-question="What was covered in lesson 5 of the MCP course?">Details of a course's lesson</button>
+                            <button class="suggested-item" data-question="What is the outline of the &quot;MCP: Build Rich-Context AI Apps with Anthropic&quot; course?">
+                                <span class="suggested-icon">&#128218;</span>
+                                Outline of a course
+                            </button>
+                            <button class="suggested-item" data-question="Are there any courses that include a Chatbot implementation?">
+                                <span class="suggested-icon">&#129302;</span>
+                                Courses about Chatbot
+                            </button>
+                            <button class="suggested-item" data-question="Are there any courses that explain what RAG is?">
+                                <span class="suggested-icon">&#128270;</span>
+                                Courses explaining RAG
+                            </button>
+                            <button class="suggested-item" data-question="What was covered in lesson 5 of the MCP course?">
+                                <span class="suggested-icon">&#128221;</span>
+                                Details of a course's lesson
+                            </button>
                         </div>
                     </details>
+                </div>
+
+                <div class="sidebar-footer">
+                    <button class="balloons-btn" id="balloonsBtn">Balloons</button>
+                    <span>Powered by Claude Agent SDK</span>
                 </div>
             </aside>
 
@@ -60,27 +117,34 @@
             <main class="chat-main">
                 <div class="chat-container">
                     <div id="chatMessages" class="chat-messages"></div>
-                    <div class="chat-input-container">
-                        <input 
-                            type="text" 
-                            id="chatInput" 
-                            placeholder="Ask about courses, lessons, or specific content..."
-                            autocomplete="off"
-                        >
-                        <button id="sendButton">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                            </svg>
-                        </button>
+                    <div class="chat-input-wrapper">
+                        <div class="chat-input-container">
+                            <input
+                                type="text"
+                                id="chatInput"
+                                placeholder="Ask a question about courses..."
+                                autocomplete="off"
+                            >
+                            <button id="sendButton" aria-label="Send message">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                            <button id="clearButton" title="Clear messages" aria-label="Clear messages">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="script.js?v=10"></script>
+    <script src="script.js?v=22"></script>
 </body>
 </html>
