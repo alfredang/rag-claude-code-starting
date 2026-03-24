@@ -3,6 +3,7 @@ const API_URL = '/api';
 
 // Global state
 let currentSessionId = null;
+let isBackendAvailable = true;
 
 // DOM elements
 let chatMessages, chatInput, sendButton, clearButton, totalCourses, courseTitles, newChatBtn, balloonsBtn;
@@ -49,6 +50,7 @@ function setupEventListeners() {
 
 // Chat Functions
 async function sendMessage() {
+    if (!isBackendAvailable) return;
     const query = chatInput.value.trim();
     if (!query) return;
 
@@ -166,6 +168,10 @@ async function handleNewChat() {
 async function createNewSession() {
     currentSessionId = null;
     chatMessages.innerHTML = '';
+    if (!isBackendAvailable) {
+        showBackendUnavailableMessage();
+        return;
+    }
     addMessage(
         'Welcome to the **Course Materials Assistant**! I can help you explore courses, dive into specific lessons, and find the content you need. What would you like to know?',
         'assistant',
@@ -204,13 +210,28 @@ async function loadCourseStats() {
 
     } catch (error) {
         console.error('Error loading course stats:', error);
+        isBackendAvailable = false;
         if (totalCourses) {
-            totalCourses.textContent = '0';
+            totalCourses.textContent = '-';
         }
         if (courseTitles) {
-            courseTitles.innerHTML = '<span class="error">Failed to load courses</span>';
+            courseTitles.innerHTML = '<span class="error">Backend not running</span>';
         }
+        showBackendUnavailableMessage();
     }
+}
+
+function showBackendUnavailableMessage() {
+    chatMessages.innerHTML = '';
+    addMessage(
+        '**Backend server is not available.**\n\nThis app requires the FastAPI backend to function. To run it locally:\n\n```bash\n# Install dependencies\nuv sync\n\n# Start the app (http://localhost:8002)\n./run.sh\n```',
+        'assistant',
+        null,
+        true
+    );
+    chatInput.disabled = true;
+    sendButton.disabled = true;
+    chatInput.placeholder = 'Backend not available — run the app locally';
 }
 
 // Theme Toggle
