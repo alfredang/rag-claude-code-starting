@@ -2,6 +2,10 @@
 
 A Retrieval-Augmented Generation chatbot for course materials, powered by the [Claude Agent SDK](https://github.com/anthropics/claude-code/tree/main/packages/sdk). It loads course documents, builds a vector store with ChromaDB, and provides intelligent Q&A with source attribution — all authenticated through your Claude Code subscription (no API key needed).
 
+## Screenshot
+
+![RAG Chatbot UI](screenshot.png)
+
 ## Prerequisites
 
 - **Python 3.13+**
