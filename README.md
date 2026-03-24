@@ -1,5 +1,7 @@
 # RAG Course Materials Chatbot
 
+> **Sample code for the [Agentic Coding with Claude Code](https://www.tertiarycourses.com.sg/agentic-coding-with-claude-code.html) course by Tertiary Courses.**
+
 A Retrieval-Augmented Generation chatbot for course materials, powered by the [Claude Agent SDK](https://github.com/anthropics/claude-code/tree/main/packages/sdk). It loads course documents, builds a vector store with ChromaDB, and provides intelligent Q&A with source attribution — all authenticated through your Claude Code subscription (no API key needed).
 
 ## Screenshot
