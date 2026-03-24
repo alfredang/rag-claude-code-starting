@@ -237,11 +237,9 @@ function initThemeToggle() {
     });
 }
 
-// Clear Messages
+// Clear Input Text
 function clearMessages() {
-    if (!confirm('Clear all messages? This cannot be undone.')) return;
-    chatMessages.innerHTML = '';
-    addMessage('Messages cleared. You can continue asking questions in the same session.', 'assistant', null, true);
+    chatInput.value = '';
     chatInput.focus();
 }
 
